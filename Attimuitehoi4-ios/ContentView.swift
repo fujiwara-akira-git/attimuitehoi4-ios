@@ -237,7 +237,7 @@ struct ContentView: View {
                 self.didShowInitial = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     self.phase = .aimm
-                    self.message = "指を上下左右にめけて"
+                    self.message = "指を上下左右に向けて"
                     self.showAimmButtons = true
                     self.isTransitioning = false
                 }
@@ -298,17 +298,24 @@ struct ContentView: View {
     private func evaluateAimm(attackerIsPlayer: Bool) {
         let attackerDir = attackerIsPlayer ? playerDirection : cpuDirection
         let defenderDir = attackerIsPlayer ? cpuDirection : playerDirection
+        // 両者の向きが決まっていることを確認
+        guard let a = attackerDir, let d = defenderDir else { return }
 
-    // CPU が攻撃者のときだけ左右の入れ替えを有効にする
-    let swapLR = !attackerIsPlayer
-    if attackerDir != nil && defenderDir != nil && dirsMatch(attackerDir!, defenderDir!, swapLR: swapLR) {
-            // 向きが一致した: まず現在の指差し/顔向き（.aimm の表示）を短時間見せる
-            finalWinner = attackerIsPlayer ? "player" : "cpu"
-            // ここではすぐに .result に移らず、まず 2.0s だけ .aimm 表示を維持
+        // 要求に基づく分岐ルールを実装する
+        // - プレイヤーが攻撃者のとき (attackerIsPlayer == true):
+        //     - up/down の一致: プレイヤーの勝ち
+        //     - right/right or left/left の一致: プレイヤーの勝ち
+        //     - right/left や left/right の交差: 勝負つかず
+        // - CPU が攻撃者のとき (attackerIsPlayer == false):
+        //     - up/down の一致: CPU の勝ち
+        //     - right/left や left/right の交差: CPU の勝ち
+        //     - right/right or left/left の一致: 勝負つかず
+
+        func finishWithWinner(_ winnerIsPlayer: Bool) {
+            finalWinner = winnerIsPlayer ? "player" : "cpu"
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 self.phase = .result
-                // 勝敗に応じて明確な文言を出す
-                if attackerIsPlayer {
+                if winnerIsPlayer {
                     self.message = "あなたの勝ち！"
                     self.playerScore += 1
                 } else {
@@ -316,37 +323,125 @@ struct ContentView: View {
                     self.cpuScore += 1
                 }
 
-                // 勝敗文言を約2秒表示してからリセット
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     self.resetAll()
                 }
             }
-        } else {
-            // 向きが違った -> 指・顔の表示をまず維持してから じゃんけん に戻す
-            // まずは aimm で見せていた向き（playerDirection / cpuDirection）をそのまま約2秒表示
-            self.playerHand = nil
-            self.cpuHand = nil
-            // ミスマッチが確定したら即座に指ボタンを隠す
-            self.showAimmButtons = false
+        }
 
-            // 2秒間は現在の指差し／顔向きを維持して表示
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                // 表示後に「勝負つかずもういちど！」を表示しつつ指向きはクリア
-                self.playerDirection = nil
-                self.cpuDirection = nil
-                self.message = "勝負つかずもういちど！"
+        // 判定ヘルパー
+        // CPU が攻撃者のときは defender の左右を入れ替えて比較する
+        let defenderEffective: Direction = {
+            if attackerIsPlayer { return d }
+            switch d {
+            case .left: return .right
+            case .right: return .left
+            default: return d
+            }
+        }()
 
-                // 勝負つかずメッセージを約2秒表示してから、両者グー -> 最初はグー！ -> ジャンケンポン！ の流れに戻す
+        let isVertical = (a == .up && defenderEffective == .up) || (a == .down && defenderEffective == .down)
+        let isHorizontalSame = (a == .right && defenderEffective == .right) || (a == .left && defenderEffective == .left)
+        let isCrossHorizontal = (a == .right && defenderEffective == .left) || (a == .left && defenderEffective == .right)
+
+        if attackerIsPlayer {
+            // プレイヤー攻撃時: 同一（上下同士、または左右同士）でプレイヤー勝ち。
+            // 左右が交差している場合は勝負つかず。
+            if isVertical || isHorizontalSame {
+                finishWithWinner(true)
+            } else if isCrossHorizontal {
+                // 勝負つかず
+                self.playerHand = nil
+                self.cpuHand = nil
+                self.showAimmButtons = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    self.playerHand = .goo
-                    self.cpuHand = .goo
-                    self.message = "最初はグー！"
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                        self.playerHand = nil
-                        self.cpuHand = nil
-                        self.phase = .ready
-                        self.isTransitioning = false
-                        self.message = "ジャンケンポン！"
+                    self.playerDirection = nil
+                    self.cpuDirection = nil
+                    self.message = "勝負つかずもういちど！"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        self.playerHand = .goo
+                        self.cpuHand = .goo
+                        self.message = "最初はグー！"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            self.playerHand = nil
+                            self.cpuHand = nil
+                            self.phase = .ready
+                            self.isTransitioning = false
+                            self.message = "ジャンケンポン！"
+                        }
+                    }
+                }
+            } else {
+                // その他の不一致（例: up vs right 等）は勝負つかず
+                self.playerHand = nil
+                self.cpuHand = nil
+                self.showAimmButtons = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self.playerDirection = nil
+                    self.cpuDirection = nil
+                    self.message = "勝負つかずもういちど！"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        self.playerHand = .goo
+                        self.cpuHand = .goo
+                        self.message = "最初はグー！"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            self.playerHand = nil
+                            self.cpuHand = nil
+                            self.phase = .ready
+                            self.isTransitioning = false
+                            self.message = "ジャンケンポン！"
+                        }
+                    }
+                }
+            }
+        } else {
+            // CPU が攻撃者のとき: 縦一致 -> CPU 勝ち
+            // 左右が交差 (right/left or left/right) -> CPU 勝ち
+            // 左右同一 (right/right or left/left) -> 勝負つかず
+            if isVertical || isCrossHorizontal {
+                finishWithWinner(false)
+            } else if isHorizontalSame {
+                // 勝負つかず
+                self.playerHand = nil
+                self.cpuHand = nil
+                self.showAimmButtons = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self.playerDirection = nil
+                    self.cpuDirection = nil
+                    self.message = "勝負つかずもういちど！"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        self.playerHand = .goo
+                        self.cpuHand = .goo
+                        self.message = "最初はグー！"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            self.playerHand = nil
+                            self.cpuHand = nil
+                            self.phase = .ready
+                            self.isTransitioning = false
+                            self.message = "ジャンケンポン！"
+                        }
+                    }
+                }
+            } else {
+                // その他の不一致 -> 勝負つかず
+                self.playerHand = nil
+                self.cpuHand = nil
+                self.showAimmButtons = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self.playerDirection = nil
+                    self.cpuDirection = nil
+                    self.message = "勝負つかずもういちど！"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        self.playerHand = .goo
+                        self.cpuHand = .goo
+                        self.message = "最初はグー！"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            self.playerHand = nil
+                            self.cpuHand = nil
+                            self.phase = .ready
+                            self.isTransitioning = false
+                            self.message = "ジャンケンポン！"
+                        }
                     }
                 }
             }
