@@ -1,0 +1,11 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="512" cy="512" r="480" fill="#FFEE99"/>
+  <ellipse cx="512" cy="600" rx="180" ry="220" fill="#FFE4C4"/>
+  <rect x="440" y="320" width="144" height="320" rx="72" fill="#FFE4C4"/>
+  <ellipse cx="512" cy="340" rx="40" ry="60" fill="#FFE4C4"/>
+  <ellipse cx="440" cy="370" rx="32" ry="50" fill="#FFE4C4"/>
+  <ellipse cx="584" cy="370" rx="32" ry="50" fill="#FFE4C4"/>
+  <ellipse cx="400" cy="420" rx="28" ry="44" fill="#FFE4C4"/>
+  <ellipse cx="624" cy="420" rx="28" ry="44" fill="#FFE4C4"/>
+  <text x="512" y="900" text-anchor="middle" font-size="120" font-family="Arial" fill="#FFB300">✊</text>
+</svg>
