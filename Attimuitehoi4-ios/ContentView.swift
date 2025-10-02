@@ -182,12 +182,14 @@ struct ContentView: View {
             // (Top controls removed - Start/Quit moved to bottom controls per design)
 
             // 下部: スコアとリセット
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 // Row 1: Score (left) and Reset (right)
-                HStack {
+                HStack(alignment: .center) {
                     Text("あなた: \(playerScore)  わたし: \(cpuScore)")
                         .font(.subheadline)
-                        .padding(12)
+                        .padding(.vertical, 6)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                         .disabled(isTransitioning)
 
                     Spacer()
@@ -199,13 +201,16 @@ struct ContentView: View {
                     }) {
                         Text(localized("reset_button"))
                             .font(.subheadline)
-                            .padding(10)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
                             .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                     }
+                    .fixedSize()
+                    .frame(minWidth: 72)
                 }
 
                 // Row 2: Start (left) and Quit (right)
-                HStack {
+                HStack(alignment: .center) {
                     Button(action: {
                         // Start: reset and go to ready
                         resetAll()
@@ -214,9 +219,12 @@ struct ContentView: View {
                     }) {
                         Text(localized("start_button"))
                             .font(.subheadline)
-                            .padding(10)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 18)
                             .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                     }
+                    .fixedSize()
+                    .frame(minWidth: 110)
 
                     Spacer()
 
@@ -230,9 +238,12 @@ struct ContentView: View {
                     }) {
                         Text(localized("quit_button"))
                             .font(.subheadline)
-                            .padding(10)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 18)
                             .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                     }
+                    .fixedSize()
+                    .frame(minWidth: 110)
                 }
 
                 // Row 3: Settings (centered)
@@ -249,9 +260,11 @@ struct ContentView: View {
                     }) {
                         Text(localized("settings_button"))
                             .font(.subheadline)
-                            .padding(10)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 14)
                             .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                     }
+                    .fixedSize()
                     Spacer()
                 }
             }
