@@ -10,7 +10,7 @@
 "you_win" = "あなたの勝ち！";
 "cpu_win" = "わたしの勝ち！";
 "draw_retry" = "勝負つかずもういちど！";
-"score_format" = "スコア: あなた %d  — CPU %d";
+"score_format" = "スコア: あなた %d  — わたし %d";
 "settings_button" = "設定";
 "settings_title" = "設定";
 "save" = "保存";

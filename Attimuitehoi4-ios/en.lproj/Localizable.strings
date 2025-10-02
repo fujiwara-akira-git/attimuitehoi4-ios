@@ -10,7 +10,7 @@
 "you_win" = "You win!";
 "cpu_win" = "I win!";
 "draw_retry" = "No decision, try again!";
-"score_format" = "Score: You %d — CPU %d";
+"score_format" = "Score: You %d — Me %d";
 "settings_button" = "Settings";
 "settings_title" = "Settings";
 "save" = "Save";
