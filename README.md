@@ -33,3 +33,17 @@
 - If not, it's a draw and the game restarts from Janken.
 - Scores are saved to iCloud when cloud sync is ON, and shared across devices.
 - Voice type and speed can be changed in settings.
+
+## TTS generation and embedding
+
+You can auto-generate TTS MP3 files from the project's Localizable.strings and embed them into the app resources using the scripts in `scripts/`.
+
+Generate and embed (example):
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+pip install -r scripts/requirements.txt
+python3 scripts/generate_and_embed_tts.py --langs ja,en --out tts_output
+```
+
+This will generate MP3s using Google Cloud Text-to-Speech and copy them into `Attimuitehoi4-ios/Attimuitehoi4-ios/Resources/TTS/<lang>/` and attempt to git commit/push them.
