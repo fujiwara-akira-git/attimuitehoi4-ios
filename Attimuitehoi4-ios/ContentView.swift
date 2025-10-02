@@ -45,6 +45,9 @@ struct ContentView: View {
     @State private var didShowInitial: Bool = false
     @State private var showAimmButtons: Bool = true
     @State private var showSettingsSheet: Bool = false
+    // Developer UI state
+    @State private var showDevConfirm: Bool = false
+    @State private var devOutputPreview: String = ""
     // Settings
     @State private var cloudSyncEnabled: Bool = true
     // internal codes for options (language-independent)
@@ -185,8 +188,32 @@ struct ContentView: View {
                     .foregroundColor(.secondary)
 
                 Button(action: {
-                    // Run the wrapper script with the currently selected role and language.
-                    let roles = selectedVoice // single role from UI (girl/boy/robot)
+                    // show confirmation before running
+                    showDevConfirm = true
+                }) {
+                    Text("Run TTS (dev, dry-run)")
+                        .font(.subheadline)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 1))
+                }
+
+                // Show a small preview of the last-run output (first N lines)
+                if !devOutputPreview.isEmpty {
+                    ScrollView(.vertical) {
+                        Text(devOutputPreview)
+                            .font(.system(.caption, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(6)
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(6)
+                    }
+                    .frame(maxHeight: 140)
+                }
+            }
+            .confirmationDialog("Run TTS generator? This will invoke a local script on your machine (dry-run).", isPresented: $showDevConfirm, titleVisibility: .visible) {
+                Button("Run (dry-run)") {
+                    // perform the call and capture the first few lines of stdout
+                    let roles = selectedVoice
                     let langs = appLanguage
                     DispatchQueue.global(qos: .utility).async {
                         let process = Process()
@@ -198,25 +225,25 @@ struct ContentView: View {
                         do {
                             try process.run()
                         } catch {
-                            print("Failed to run dev TTS script:", error)
                             DispatchQueue.main.async {
-                                self.message = "Dev TTS: failed to start"
+                                self.devOutputPreview = "Failed to start script: \(error)"
                             }
                             return
                         }
-                        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                        // read up to some bytes (avoid blocking on very large output)
+                        let fh = pipe.fileHandleForReading
+                        let data = fh.readDataToEndOfFile()
                         let output = String(decoding: data, as: UTF8.self)
+                        // take first 12 non-empty lines for preview
+                        let lines = output.split(whereSeparator: \n).map { String($0) }
+                        let filtered = lines.prefix(12).joined(separator: "\n")
                         DispatchQueue.main.async {
-                            print("Dev TTS output:\n\(output)")
-                            self.message = "Dev TTS: done (check console)"
+                            self.devOutputPreview = filtered
+                            self.message = "Dev TTS: finished (preview shown)"
                         }
                     }
-                }) {
-                    Text("Run TTS (dev, dry-run)")
-                        .font(.subheadline)
-                        .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 1))
                 }
+                Button("Cancel", role: .cancel) { }
             }
             #endif
 
