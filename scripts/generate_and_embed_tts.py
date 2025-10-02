@@ -98,6 +98,7 @@ def main():
     p.add_argument('--out', default='tts_output', help='Output directory used by generate_tts.py')
     p.add_argument('--skip-generate', action='store_true', help='Skip calling the generator and just rename/copy existing files')
     p.add_argument('--voice-map', default='ja:ja-JP-Wavenet-A,en:en-US-Wavenet-A', help='voice map passed to generator')
+    p.add_argument('--friendly-map', default='', help="Friendly mapping like 'girl:ja:ja-JP-Neural2-C,boy:ja:ja-JP-Neural2-B,robot:ja:ja-JP-Chirp3-HD-Achernar' or leave empty to use built-in defaults.")
     p.add_argument('--project', default=None, help='Optional GCP project id to pass to generator')
     p.add_argument('--rate', type=float, default=1.0)
     p.add_argument('--pitch', type=float, default=2.0)
@@ -108,8 +109,54 @@ def main():
         print('No langs specified')
         sys.exit(1)
 
+    # Build effective voice_map: --voice-map has priority. If not provided, expand friendly_map defaults.
+    effective_voice_map = args.voice_map.strip() if args.voice_map else ''
+
+    # parse friendly_map if provided and voice_map wasn't explicitly set
+    if not effective_voice_map and args.friendly_map:
+        # friendly_map format: 'label:lang:voice,...'
+        parts = [p.strip() for p in args.friendly_map.split(',') if p.strip()]
+        fm = {}
+        for part in parts:
+            # accept two forms: 'label:lang:voice' or 'label:voice' (assume first lang in langs)
+            segs = part.split(':')
+            if len(segs) == 3:
+                label, lang_k, voice_id = segs
+            elif len(segs) == 2 and len(langs) == 1:
+                label, voice_id = segs
+                lang_k = langs[0]
+            else:
+                print(f'Ignoring malformed friendly-map segment: {part}')
+                continue
+            fm.setdefault(lang_k, {})[label.strip()] = voice_id.strip()
+        # Construct voice_map string like 'ja:ja-JP-Neural2-C,en:en-US-Neural2-C' using labels for default role names
+        # For convenience, if user passed 'girl,boy,robot' as labels without explicit mapping, we will map them to built-in defaults below.
+        # We'll set effective_voice_map as comma-separated lang:voice entries using the 'girl' label if present.
+        # We'll also export the fm structure for later use by this script when copying files.
+        # Build a fallback voice_map from known friendly labels if available
+        builtins = {
+            'girl': {'ja': 'ja-JP-Neural2-C', 'en': 'en-US-Neural2-C'},
+            'boy': {'ja': 'ja-JP-Neural2-B', 'en': 'en-US-Neural2-B'},
+            'robot': {'ja': 'ja-JP-Chirp3-HD-Achernar', 'en': 'en-US-Chirp3-HD-Achernar'},
+        }
+        # If friendly_map specified explicit voice IDs, use them; otherwise use builtins for labels present in fm
+        entries = []
+        for lang_k in langs:
+            # pick label 'girl' if available else first label defined
+            if lang_k in fm:
+                # if mapping provided for this lang, choose the first label's voice as default
+                # (this behavior is simple — UI should pass explicit mapping for clarity)
+                first_label = next(iter(fm[lang_k]))
+                entries.append(f"{lang_k}:{fm[lang_k][first_label]}")
+            else:
+                # try builtins
+                if 'girl' in builtins and lang_k in builtins['girl']:
+                    entries.append(f"{lang_k}:{builtins['girl'][lang_k]}")
+        if entries:
+            effective_voice_map = ','.join(entries)
+
     if not args.skip_generate:
-        run_generate(langs, args.out, args.voice_map, args.rate, args.pitch)
+        run_generate(langs, args.out, effective_voice_map, args.rate, args.pitch)
     else:
         print('Skipping generation step as requested (--skip-generate)')
 

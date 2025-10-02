@@ -51,7 +51,11 @@ def safe_filename(s: str) -> str:
 
 def synthesize_text(client, text: str, out_path: Path, language_code: str, voice_name: str, rate: float, pitch: float):
     input_text = texttospeech.SynthesisInput(text=text)
-    voice = texttospeech.VoiceSelectionParams(language_code=language_code, name=voice_name)
+    # If voice_name is empty or None, only specify language_code and let the service pick a default
+    if voice_name:
+        voice = texttospeech.VoiceSelectionParams(language_code=language_code, name=voice_name)
+    else:
+        voice = texttospeech.VoiceSelectionParams(language_code=language_code)
     audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3,
                                              speaking_rate=rate, pitch=pitch)
     response = client.synthesize_speech(input=input_text, voice=voice, audio_config=audio_config)
@@ -83,11 +87,22 @@ def main():
                 k, v = part.split(':', 1)
                 voice_map[k.strip()] = v.strip()
 
+    # Initialize client first, then attempt to fetch available voices for validation.
     try:
         client = texttospeech.TextToSpeechClient()
     except Exception as e:
         print("Failed to initialize TextToSpeechClient. Ensure GOOGLE_APPLICATION_CREDENTIALS is set and google-cloud-texttospeech is installed.")
         raise
+
+    # Fetch available voices from the API so we can validate requested voice names and provide
+    # helpful messages when the user requests an unavailable voice.
+    try:
+        available_voices_resp = client.list_voices()
+        available_voices = {v.name: v for v in available_voices_resp.voices}
+    except Exception as e:
+        print(f"Warning: failed to fetch available voices from the API: {e}")
+        # Use None to indicate we couldn't fetch the list; we will not attempt to validate in that case.
+        available_voices = None
 
     # If project id not provided, try to read from credentials JSON referenced by
     # GOOGLE_APPLICATION_CREDENTIALS environment variable.
@@ -128,6 +143,20 @@ def main():
             else:
                 default_voice = None
 
+        # validate requested/default voice exists in the API list (only if we successfully fetched it)
+        if default_voice and available_voices and default_voice not in available_voices:
+            print(f"Warning: requested/default voice '{default_voice}' for lang '{lang}' not found in available voices.")
+            # show some available voices for this language as suggestions
+            suggestions = [v for v in available_voices.values() if any(code.startswith(lang.split('-')[0]) for code in v.language_codes)]
+            if suggestions:
+                print('Available voices for this language (sample):')
+                for v in suggestions[:8]:
+                    print(f"  {v.name} (gender={v.ssml_gender}, languages={','.join(v.language_codes)})")
+            else:
+                print('No available voices could be detected from the API response.')
+            # fall back to not specifying a name so the API picks an appropriate voice
+            default_voice = None
+
         out_dir_lang = Path(args.out) / lang
         out_dir_lang.mkdir(parents=True, exist_ok=True)
         print(f"Found {len(items)} strings for {lang}. Generating MP3s to: {out_dir_lang}\n")
@@ -142,8 +171,18 @@ def main():
             # Append language suffix to filename to avoid collisions when embedding multiple languages
             filename = f"{safe_filename(key)}_{lang}.mp3"
             out_path = out_dir_lang / filename
-            voice_to_use = default_voice if default_voice else ''
+            voice_to_use = default_voice if default_voice else None
             print(f"Generating {lang}/{filename} <- {val}")
+            if voice_to_use:
+                info = None
+                if available_voices:
+                    info = available_voices.get(voice_to_use)
+                if info:
+                    print(f"  Using voice: {voice_to_use} (gender={info.ssml_gender}, languages={','.join(info.language_codes)})")
+                else:
+                    print(f"  Using voice: {voice_to_use}")
+            else:
+                print("  No explicit voice name specified — letting TTS service pick default voice for the language")
             try:
                 synthesize_text(client, val, out_path, lang_code, voice_to_use, args.rate, args.pitch)
             except Exception as e:
