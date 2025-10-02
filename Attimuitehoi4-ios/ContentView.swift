@@ -182,69 +182,77 @@ struct ContentView: View {
             // (Top controls removed - Start/Quit moved to bottom controls per design)
 
             // 下部: スコアとリセット
-            HStack(spacing: 12) {
-                // Score
-                Text("あなた: \(playerScore)  わたし: \(cpuScore)")
-                    .font(.subheadline)
-                    .padding(12)
-                    .disabled(isTransitioning)
-
-                Spacer()
-
-                // Reset
-                Button(action: {
-                    playerScore = 0
-                    cpuScore = 0
-                    resetAll()
-                }) {
-                    Text(localized("reset_button"))
+            VStack(spacing: 10) {
+                // Row 1: Score (left) and Reset (right)
+                HStack {
+                    Text("あなた: \(playerScore)  わたし: \(cpuScore)")
                         .font(.subheadline)
-                        .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
-                }
+                        .padding(12)
+                        .disabled(isTransitioning)
 
-                // Start
-                Button(action: {
-                    // Start: reset and go to ready
-                    resetAll()
-                    phase = .ready
-                    message = localized("start_message")
-                }) {
-                    Text(localized("start_button"))
-                        .font(.subheadline)
-                        .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
-                }
+                    Spacer()
 
-                // Quit
-                Button(action: {
-                    // Quit: save scores to cloud then terminate app
-                    saveScoresToCloud()
-                    // give a short moment to persist
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        exit(0)
+                    Button(action: {
+                        playerScore = 0
+                        cpuScore = 0
+                        resetAll()
+                    }) {
+                        Text(localized("reset_button"))
+                            .font(.subheadline)
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                     }
-                }) {
-                    Text(localized("quit_button"))
-                        .font(.subheadline)
-                        .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                 }
 
-                // Settings
-                Button(action: {
-                    // 設定シートを表示
-                    // Load saved values when opening
-                    let defaults = UserDefaults.standard
-                    cloudSyncEnabled = defaults.bool(forKey: "cloudSyncEnabled")
-                    selectedVoice = defaults.string(forKey: "selectedVoice") ?? "girl"
-                    speedSetting = defaults.string(forKey: "speedSetting") ?? "normal"
-                    showSettingsSheet = true
-                }) {
-                    Text(localized("settings_button"))
-                        .font(.subheadline)
-                        .padding(10)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                // Row 2: Start (left) and Quit (right)
+                HStack {
+                    Button(action: {
+                        // Start: reset and go to ready
+                        resetAll()
+                        phase = .ready
+                        message = localized("start_message")
+                    }) {
+                        Text(localized("start_button"))
+                            .font(.subheadline)
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                    }
+
+                    Spacer()
+
+                    Button(action: {
+                        // Quit: save scores to cloud then terminate app
+                        saveScoresToCloud()
+                        // give a short moment to persist
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            exit(0)
+                        }
+                    }) {
+                        Text(localized("quit_button"))
+                            .font(.subheadline)
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                    }
+                }
+
+                // Row 3: Settings (centered)
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        // 設定シートを表示
+                        // Load saved values when opening
+                        let defaults = UserDefaults.standard
+                        cloudSyncEnabled = defaults.bool(forKey: "cloudSyncEnabled")
+                        selectedVoice = defaults.string(forKey: "selectedVoice") ?? "girl"
+                        speedSetting = defaults.string(forKey: "speedSetting") ?? "normal"
+                        showSettingsSheet = true
+                    }) {
+                        Text(localized("settings_button"))
+                            .font(.subheadline)
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                    }
+                    Spacer()
                 }
             }
             // (cloud buttons removed)
