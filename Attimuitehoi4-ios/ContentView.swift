@@ -183,14 +183,36 @@ struct ContentView: View {
 
             // 下部: スコアとリセット
             VStack(spacing: 8) {
-                // Row 1: Score (left) and Reset (right)
+                // Row 1: Prominent Score panel and Reset
                 HStack(alignment: .center) {
-                    Text("あなた: \(playerScore)  わたし: \(cpuScore)")
-                        .font(.subheadline)
-                        .padding(.vertical, 6)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .disabled(isTransitioning)
+                    // Score panel
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text("あなた")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(playerScore)")
+                                .font(.title)
+                                .bold()
+                                .foregroundColor(.primary)
+                        }
+
+                        HStack(spacing: 8) {
+                            Text("わたし")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(cpuScore)")
+                                .font(.title2)
+                                .bold()
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.quaternaryLabel)))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(Text("スコア: あなた \(playerScore) わたし \(cpuScore)"))
+                    .disabled(isTransitioning)
 
                     Spacer()
 
