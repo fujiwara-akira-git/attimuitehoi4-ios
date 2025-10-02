@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		D136F4C12E80DB1D0013D6D6 /* Attimuitehoi4-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Attimuitehoi4-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+        9F2B3C4D5E6A7B8C9D0E1F2 /* TTS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TTS; path = "Attimuitehoi4-ios/Attimuitehoi4-ios/Resources/TTS"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +34,7 @@
 			isa = PBXGroup;
 			children = (
 				D136F4C32E80DB1D0013D6D6 /* Attimuitehoi4-ios */,
+				9F2B3C4D5E6A7B8C9D0E1F2 /* TTS */,
 				D136F4C22E80DB1D0013D6D6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -110,10 +112,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A8B7C6D5E4F3A2B1C0D2E3 /* TTS in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXBuildFile section */
+		9A8B7C6D5E4F3A2B1C0D2E3 /* TTS in Resources */ = {isa = PBXBuildFile; fileRef = 9F2B3C4D5E6A7B8C9D0E1F2 /* TTS */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D136F4BD2E80DB1C0013D6D6 /* Sources */ = {
