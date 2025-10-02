@@ -49,9 +49,7 @@ struct ContentView: View {
     @State private var didShowInitial: Bool = false
     @State private var showAimmButtons: Bool = true
     @State private var showSettingsSheet: Bool = false
-    // Developer UI state
-    @State private var showDevConfirm: Bool = false
-    @State private var devOutputPreview: String = ""
+    // Developer UI state (removed)
     // Settings
     @State private var cloudSyncEnabled: Bool = true
     // internal codes for options (language-independent)
@@ -183,82 +181,7 @@ struct ContentView: View {
                             .disabled(isTransitioning)
             Spacer()
 
-            // Developer-only debug area (only available in DEBUG build on Simulator)
-            #if DEBUG && targetEnvironment(simulator)
-            VStack(spacing: 8) {
-                Divider()
-                Text("Developer")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Button(action: {
-                    // show confirmation before running
-                    showDevConfirm = true
-                }) {
-                    Text("Run TTS (dev, dry-run)")
-                        .font(.subheadline)
-                        .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 1))
-                }
-
-                // Show a small preview of the last-run output (first N lines)
-                if !devOutputPreview.isEmpty {
-                    ScrollView(.vertical) {
-                        Text(devOutputPreview)
-                            .font(.system(.caption, design: .monospaced))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(6)
-                            .background(Color(.secondarySystemBackground))
-                            .cornerRadius(6)
-                    }
-                    .frame(maxHeight: 140)
-                }
-            }
-            .confirmationDialog("Run TTS generator? This will invoke a local script on your machine (dry-run).", isPresented: $showDevConfirm, titleVisibility: .visible) {
-                Button("Run (dry-run)") {
-                    // Prepare the shell command we'd run locally
-                    let roles = selectedVoice
-                    let langs = appLanguage
-                    let cmd = "python3 scripts/run_tts_for_ui.py --roles \(roles) --langs \(langs) --out tts_dev_output --skip-generate --dry-run"
-
-                    #if canImport(UIKit)
-                    // On iOS (simulator) we cannot spawn processes from the app; copy the command to clipboard
-                    UIPasteboard.general.string = cmd
-                    DispatchQueue.main.async {
-                        self.devOutputPreview = "Command copied to clipboard:\n\(cmd)"
-                        self.message = "Dev TTS: command copied to clipboard"
-                    }
-                    #else
-                    // On non-UIKit platforms (e.g. macOS) attempt to run the command and capture preview
-                    DispatchQueue.global(qos: .utility).async {
-                        let process = Process()
-                        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-                        process.arguments = ["sh", "-c", cmd]
-                        let pipe = Pipe()
-                        process.standardOutput = pipe
-                        process.standardError = pipe
-                        do {
-                            try process.run()
-                        } catch {
-                            DispatchQueue.main.async {
-                                self.devOutputPreview = "Failed to start script: \(error)"
-                            }
-                            return
-                        }
-                        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                        let output = String(decoding: data, as: UTF8.self)
-                        let lines = output.split(separator: "\n").map { String($0) }
-                        let filtered = lines.prefix(12).joined(separator: "\n")
-                        DispatchQueue.main.async {
-                            self.devOutputPreview = filtered
-                            self.message = "Dev TTS: finished (preview shown)"
-                        }
-                    }
-                    #endif
-                }
-                Button("Cancel", role: .cancel) { }
-            }
-            #endif
+            // Developer UI removed
 
             
             // 下部: スコアとリセット
