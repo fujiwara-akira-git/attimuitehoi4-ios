@@ -29,10 +29,10 @@ python3 scripts/generate_and_embed_tts.py --langs ja,en --out tts_output
 python3 scripts/generate_and_embed_tts.py --langs ja,en --out tts_output --skip-generate
 ```
 
-## UI から呼ぶ（開発者向け簡易ラッパー）
-アプリの UI（`ContentView.swift` など）で選択したラベル（`girl`, `boy`, `robot` など）をそのまま渡してスクリプトを実行できるように、簡易ラッパー `scripts/run_tts_for_ui.py` を用意しました。ローカル開発用で、CI からの呼び出しにも使えます。
+## ローカルでの実行（UI からではなくターミナルで実行してください）
+以前はアプリ内に開発者向けのボタンがありましたが、その表示は削除されました。ローカル開発者が簡単に実行できるよう、`scripts/run_tts_for_ui.py` というラッパーは残しています。アプリ内からの自動実行は行わない方針です。
 
-例:
+ターミナルから実行する例:
 
 ```
 python3 scripts/run_tts_for_ui.py --roles girl,boy --langs ja --out tts_output
