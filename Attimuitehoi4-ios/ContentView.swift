@@ -186,10 +186,10 @@ struct ContentView: View {
             
             // 下部: スコアとリセット
             HStack {
-                Text(String(format: localized("score_format"), playerScore, cpuScore))
+                Text("あなた: \(playerScore)  わたし: \(cpuScore)")
                     .font(.subheadline)
                     .padding(12)
-                            .disabled(isTransitioning)
+                    .disabled(isTransitioning)
 
                 Spacer()
 
