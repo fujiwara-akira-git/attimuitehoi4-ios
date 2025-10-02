@@ -179,13 +179,11 @@ struct ContentView: View {
             }
             .padding(.top, 8)
                             .disabled(isTransitioning)
-            Spacer()
+            // (Top controls removed - Start/Quit moved to bottom controls per design)
 
-            // Developer UI removed
-
-            
             // 下部: スコアとリセット
-            HStack {
+            HStack(spacing: 12) {
+                // Score
                 Text("あなた: \(playerScore)  わたし: \(cpuScore)")
                     .font(.subheadline)
                     .padding(12)
@@ -193,6 +191,7 @@ struct ContentView: View {
 
                 Spacer()
 
+                // Reset
                 Button(action: {
                     playerScore = 0
                     cpuScore = 0
@@ -204,6 +203,7 @@ struct ContentView: View {
                         .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                 }
 
+                // Start
                 Button(action: {
                     // Start: reset and go to ready
                     resetAll()
@@ -216,18 +216,14 @@ struct ContentView: View {
                         .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                 }
 
+                // Quit
                 Button(action: {
-                    // Quit: save scores to cloud, then clear state and show goodbye
+                    // Quit: save scores to cloud then terminate app
                     saveScoresToCloud()
-                    playerScore = 0
-                    cpuScore = 0
-                    finalWinner = nil
-                    playerHand = nil
-                    cpuHand = nil
-                    playerDirection = nil
-                    cpuDirection = nil
-                    phase = .ready
-                    message = localized("quit_message")
+                    // give a short moment to persist
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        exit(0)
+                    }
                 }) {
                     Text(localized("quit_button"))
                         .font(.subheadline)
@@ -235,6 +231,7 @@ struct ContentView: View {
                         .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                 }
 
+                // Settings
                 Button(action: {
                     // 設定シートを表示
                     // Load saved values when opening
