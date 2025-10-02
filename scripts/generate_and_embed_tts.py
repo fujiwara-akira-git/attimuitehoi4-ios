@@ -113,6 +113,7 @@ def main():
     p.add_argument('--langs', default='ja', help='Comma-separated langs to generate (e.g. ja,en)')
     p.add_argument('--out', default='tts_output', help='Output directory used by generate_tts.py')
     p.add_argument('--skip-generate', action='store_true', help='Skip calling the generator and just rename/copy existing files')
+    p.add_argument('--dry-run', action='store_true', help='Perform a dry-run: do not rename/copy or commit; only print actions')
     p.add_argument('--voice-map', default='ja:ja-JP-Wavenet-A,en:en-US-Wavenet-A', help='voice map passed to generator')
     p.add_argument('--friendly-map', default='', help="Friendly mapping like 'girl:ja:ja-JP-Neural2-C,boy:ja:ja-JP-Neural2-B,robot:ja:ja-JP-Chirp3-HD-Achernar' or leave empty to use built-in defaults.")
     p.add_argument('--roles', default='', help="Comma-separated roles to generate (e.g. girl,boy,robot). When provided, per-role presets (voice/rate/pitch) will be used.")
@@ -202,15 +203,25 @@ def main():
             print('Skipping generation step as requested (--skip-generate)')
 
     # If project already has TTS files, attempt to rename them into the new suffix scheme
-    rename_existing_project_files(langs)
+    if args.dry_run:
+        print('Dry-run: would rename existing project files for langs:', langs)
+    else:
+        rename_existing_project_files(langs)
 
-    copy_into_project(args.out, langs)
+    if args.dry_run:
+        print('Dry-run: would copy generated files from', args.out, 'into project TTS dirs for langs:', langs)
+    else:
+        copy_into_project(args.out, langs)
+
     commit_msg = f'Add generated TTS for langs: {" ".join(langs)}'
-    try:
-        git_commit_and_push(commit_msg)
-    except subprocess.CalledProcessError as e:
-        print('git commit/push failed:', e)
-        print('You may wish to run git add/commit/push manually.')
+    if args.dry_run:
+        print('Dry-run: would run git add/commit/push with message:', commit_msg)
+    else:
+        try:
+            git_commit_and_push(commit_msg)
+        except subprocess.CalledProcessError as e:
+            print('git commit/push failed:', e)
+            print('You may wish to run git add/commit/push manually.')
 
 
 if __name__ == '__main__':

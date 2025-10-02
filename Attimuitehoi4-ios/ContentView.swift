@@ -176,6 +176,50 @@ struct ContentView: View {
                             .disabled(isTransitioning)
             Spacer()
 
+            // Developer-only debug area (only available in DEBUG build on Simulator)
+            #if DEBUG && targetEnvironment(simulator)
+            VStack(spacing: 8) {
+                Divider()
+                Text("Developer")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Button(action: {
+                    // Run the wrapper script with the currently selected role and language.
+                    let roles = selectedVoice // single role from UI (girl/boy/robot)
+                    let langs = appLanguage
+                    DispatchQueue.global(qos: .utility).async {
+                        let process = Process()
+                        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+                        process.arguments = ["python3", "scripts/run_tts_for_ui.py", "--roles", roles, "--langs", langs, "--out", "tts_dev_output", "--skip-generate", "--dry-run"]
+                        let pipe = Pipe()
+                        process.standardOutput = pipe
+                        process.standardError = pipe
+                        do {
+                            try process.run()
+                        } catch {
+                            print("Failed to run dev TTS script:", error)
+                            DispatchQueue.main.async {
+                                self.message = "Dev TTS: failed to start"
+                            }
+                            return
+                        }
+                        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                        let output = String(decoding: data, as: UTF8.self)
+                        DispatchQueue.main.async {
+                            print("Dev TTS output:\n\(output)")
+                            self.message = "Dev TTS: done (check console)"
+                        }
+                    }
+                }) {
+                    Text("Run TTS (dev, dry-run)")
+                        .font(.subheadline)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 1))
+                }
+            }
+            #endif
+
             
             // 下部: スコアとリセット
             HStack {
