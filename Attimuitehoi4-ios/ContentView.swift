@@ -217,7 +217,8 @@ struct ContentView: View {
                 }
 
                 Button(action: {
-                    // Quit: clear state and show goodbye
+                    // Quit: save scores to cloud, then clear state and show goodbye
+                    saveScoresToCloud()
                     playerScore = 0
                     cpuScore = 0
                     finalWinner = nil
