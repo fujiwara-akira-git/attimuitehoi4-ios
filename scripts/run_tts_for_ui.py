@@ -20,6 +20,8 @@ p.add_argument('--roles', default='girl', help='Comma-separated roles to generat
 p.add_argument('--langs', default='ja', help='Comma-separated languages (e.g. ja,en)')
 p.add_argument('--out', default='tts_output', help='Output dir')
 p.add_argument('--skip-generate', action='store_true', help='Skip generation (use existing files)')
+# passthrough for perform-safe tests
+p.add_argument('--dry-run', action='store_true', help='Pass --dry-run to underlying script to avoid side effects')
 # Optional overrides for rate/pitch per role (simple form: girl:1.0:0.0,boy:1.0:0.0)
 p.add_argument('--overrides', default='', help='Optional per-role overrides: role:rate:pitch,...')
 args = p.parse_args()
@@ -27,6 +29,8 @@ args = p.parse_args()
 cmd = [sys.executable, 'scripts/generate_and_embed_tts.py', '--roles', args.roles, '--langs', args.langs, '--out', args.out]
 if args.skip_generate:
     cmd.append('--skip-generate')
+if args.dry_run:
+  cmd.append('--dry-run')
 
 # if overrides provided, convert to friendly-map-like voice override by embedding pitch/rate in presets is not currently supported
 # Instead, pass nothing and rely on built-in presets; generate_and_embed_tts.py will use args.rate/args.pitch defaults if needed.
