@@ -8,7 +8,7 @@
 
 /* Begin PBXFileReference section */
 		D136F4C12E80DB1D0013D6D6 /* Attimuitehoi4-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Attimuitehoi4-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-        9F2B3C4D5E6A7B8C9D0E1F2 /* TTS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TTS; path = "Attimuitehoi4-ios/Attimuitehoi4-ios/Resources/TTS"; sourceTree = "<group>"; };
+	9F2B3C4D5E6A7B8C9D0E1F2 /* TTS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TTS; path = "Resources/TTS"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */

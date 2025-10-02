@@ -139,7 +139,8 @@ def main():
             if not val.strip():
                 print(f"Skipping empty: {key}")
                 continue
-            filename = safe_filename(key) + '.mp3'
+            # Append language suffix to filename to avoid collisions when embedding multiple languages
+            filename = f"{safe_filename(key)}_{lang}.mp3"
             out_path = out_dir_lang / filename
             voice_to_use = default_voice if default_voice else ''
             print(f"Generating {lang}/{filename} <- {val}")
