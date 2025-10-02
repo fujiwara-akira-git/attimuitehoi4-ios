@@ -186,11 +186,9 @@ struct ContentView: View {
                 let wide = geo.size.width >= 420
 
                 if wide {
-                    // Wide layout: two columns
-                    HStack(alignment: .center, spacing: 16) {
-                        // Left column: Score + Reset (vertical)
-                        VStack(alignment: .leading, spacing: 10) {
-                            // Score panel
+                    HStack(alignment: .center, spacing: 12) {
+                        // Left column: Score + Reset
+                        VStack(alignment: .leading, spacing: 8) {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 8) {
                                     Text("あなた")
@@ -219,7 +217,6 @@ struct ContentView: View {
                             .accessibilityLabel(Text("スコア: あなた \(playerScore) わたし \(cpuScore)"))
                             .disabled(isTransitioning)
 
-                            // Reset button below score
                             Button(action: {
                                 playerScore = 0
                                 cpuScore = 0
@@ -231,15 +228,15 @@ struct ContentView: View {
                                     .padding(.horizontal, 12)
                                     .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                             }
-                            .fixedSize()
+                            .frame(maxWidth: 140)
                         }
-                        .frame(minWidth: 160)
+                        .frame(maxWidth: geo.size.width * 0.45)
 
                         Spacer()
 
-                        // Right column: Start, Quit, Settings (stacked)
-                        VStack(alignment: .trailing, spacing: 10) {
-                            HStack {
+                        // Right column: Start/Quit + Settings
+                        VStack(alignment: .trailing, spacing: 8) {
+                            HStack(spacing: 12) {
                                 Button(action: {
                                     resetAll()
                                     phase = .ready
@@ -251,8 +248,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 18)
                                         .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                                 }
-
-                                Spacer()
+                                .frame(maxWidth: .infinity)
 
                                 Button(action: {
                                     saveScoresToCloud()
@@ -266,6 +262,7 @@ struct ContentView: View {
                                         .padding(.horizontal, 18)
                                         .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                                 }
+                                .frame(maxWidth: .infinity)
                             }
 
                             Button(action: {
@@ -281,13 +278,12 @@ struct ContentView: View {
                                     .padding(.horizontal, 14)
                                     .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                             }
-                            .fixedSize()
+                            .frame(maxWidth: 160)
                         }
-                        .frame(minWidth: 180)
+                        .frame(maxWidth: geo.size.width * 0.45)
                     }
                     .padding(.vertical, 6)
                 } else {
-                    // Narrow layout: stacked rows (Score+Reset, Start+Quit, Settings)
                     VStack(spacing: 8) {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
@@ -311,6 +307,7 @@ struct ContentView: View {
                             }
                             .padding(8)
                             .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+                            .layoutPriority(1)
 
                             Spacer()
 
@@ -325,7 +322,7 @@ struct ContentView: View {
                                     .padding(.horizontal, 12)
                                     .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                             }
-                            .fixedSize()
+                            .frame(minWidth: 60)
                         }
 
                         HStack {
@@ -340,6 +337,7 @@ struct ContentView: View {
                                     .padding(.horizontal, 18)
                                     .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                             }
+                            .frame(maxWidth: .infinity)
 
                             Spacer()
 
@@ -355,6 +353,7 @@ struct ContentView: View {
                                     .padding(.horizontal, 18)
                                     .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                             }
+                            .frame(maxWidth: .infinity)
                         }
 
                         HStack {
@@ -372,7 +371,7 @@ struct ContentView: View {
                                     .padding(.horizontal, 14)
                                     .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
                             }
-                            .fixedSize()
+                            .frame(maxWidth: 160)
                             Spacer()
                         }
                     }
