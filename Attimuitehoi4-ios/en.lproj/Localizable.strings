@@ -32,3 +32,7 @@
 "reset_button" = "Reset";
 "speech_section_header" = "Speech";
 "speech_toggle" = "Enable speech (TTS)";
+"start_button" = "Start";
+"quit_button" = "Quit";
+"start_message" = "Starting game";
+"quit_message" = "Game ended";

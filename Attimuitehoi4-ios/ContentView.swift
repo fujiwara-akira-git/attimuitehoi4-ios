@@ -205,6 +205,36 @@ struct ContentView: View {
                 }
 
                 Button(action: {
+                    // Start: reset and go to ready
+                    resetAll()
+                    phase = .ready
+                    message = localized("start_message")
+                }) {
+                    Text(localized("start_button"))
+                        .font(.subheadline)
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                }
+
+                Button(action: {
+                    // Quit: clear state and show goodbye
+                    playerScore = 0
+                    cpuScore = 0
+                    finalWinner = nil
+                    playerHand = nil
+                    cpuHand = nil
+                    playerDirection = nil
+                    cpuDirection = nil
+                    phase = .ready
+                    message = localized("quit_message")
+                }) {
+                    Text(localized("quit_button"))
+                        .font(.subheadline)
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                }
+
+                Button(action: {
                     // 設定シートを表示
                     // Load saved values when opening
                     let defaults = UserDefaults.standard

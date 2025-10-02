@@ -32,3 +32,7 @@
 "reset_button" = "リセット";
 "speech_section_header" = "音声";
 "speech_toggle" = "音声を有効にする (TTS)";
+"start_button" = "開始";
+"quit_button" = "終了";
+"start_message" = "ゲームを開始します";
+"quit_message" = "ゲームを終了しました";
