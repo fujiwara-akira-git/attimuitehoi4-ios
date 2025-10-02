@@ -195,7 +195,10 @@ def main():
                     per_lang_params[lang] = {'voice': None, 'rate': args.rate, 'pitch': args.pitch}
             # call generator per role; output goes to out/<role>
             out_dir = Path(args.out) / role
-            run_generate_per_lang(str(out_dir), per_lang_params)
+            if not args.skip_generate:
+                run_generate_per_lang(str(out_dir), per_lang_params)
+            else:
+                print(f'Skipping generation for role {role} due to --skip-generate')
     else:
         if not args.skip_generate:
             run_generate(langs, args.out, effective_voice_map, args.rate, args.pitch)
