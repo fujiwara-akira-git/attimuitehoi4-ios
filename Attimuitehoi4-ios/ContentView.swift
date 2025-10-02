@@ -182,112 +182,200 @@ struct ContentView: View {
             // (Top controls removed - Start/Quit moved to bottom controls per design)
 
             // 下部: スコアとリセット
-            VStack(spacing: 8) {
-                // Row 1: Prominent Score panel and Reset
-                HStack(alignment: .center) {
-                    // Score panel
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) {
-                            Text("あなた")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("\(playerScore)")
-                                .font(.title)
-                                .bold()
-                                .foregroundColor(.primary)
+            GeometryReader { geo in
+                let wide = geo.size.width >= 420
+
+                if wide {
+                    // Wide layout: two columns
+                    HStack(alignment: .center, spacing: 16) {
+                        // Left column: Score + Reset (vertical)
+                        VStack(alignment: .leading, spacing: 10) {
+                            // Score panel
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 8) {
+                                    Text("あなた")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("\(playerScore)")
+                                        .font(.title)
+                                        .bold()
+                                        .foregroundColor(.primary)
+                                }
+
+                                HStack(spacing: 8) {
+                                    Text("わたし")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("\(cpuScore)")
+                                        .font(.title2)
+                                        .bold()
+                                        .foregroundColor(.primary)
+                                }
+                            }
+                            .padding(10)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.quaternaryLabel)))
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(Text("スコア: あなた \(playerScore) わたし \(cpuScore)"))
+                            .disabled(isTransitioning)
+
+                            // Reset button below score
+                            Button(action: {
+                                playerScore = 0
+                                cpuScore = 0
+                                resetAll()
+                            }) {
+                                Text(localized("reset_button"))
+                                    .font(.subheadline)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                            }
+                            .fixedSize()
+                        }
+                        .frame(minWidth: 160)
+
+                        Spacer()
+
+                        // Right column: Start, Quit, Settings (stacked)
+                        VStack(alignment: .trailing, spacing: 10) {
+                            HStack {
+                                Button(action: {
+                                    resetAll()
+                                    phase = .ready
+                                    message = localized("start_message")
+                                }) {
+                                    Text(localized("start_button"))
+                                        .font(.subheadline)
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 18)
+                                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                                }
+
+                                Spacer()
+
+                                Button(action: {
+                                    saveScoresToCloud()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                        exit(0)
+                                    }
+                                }) {
+                                    Text(localized("quit_button"))
+                                        .font(.subheadline)
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 18)
+                                        .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                                }
+                            }
+
+                            Button(action: {
+                                let defaults = UserDefaults.standard
+                                cloudSyncEnabled = defaults.bool(forKey: "cloudSyncEnabled")
+                                selectedVoice = defaults.string(forKey: "selectedVoice") ?? "girl"
+                                speedSetting = defaults.string(forKey: "speedSetting") ?? "normal"
+                                showSettingsSheet = true
+                            }) {
+                                Text(localized("settings_button"))
+                                    .font(.subheadline)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 14)
+                                    .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                            }
+                            .fixedSize()
+                        }
+                        .frame(minWidth: 180)
+                    }
+                    .padding(.vertical, 6)
+                } else {
+                    // Narrow layout: stacked rows (Score+Reset, Start+Quit, Settings)
+                    VStack(spacing: 8) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 8) {
+                                    Text("あなた")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("\(playerScore)")
+                                        .font(.title)
+                                        .bold()
+                                }
+
+                                HStack(spacing: 8) {
+                                    Text("わたし")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("\(cpuScore)")
+                                        .font(.title2)
+                                        .bold()
+                                }
+                            }
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+
+                            Spacer()
+
+                            Button(action: {
+                                playerScore = 0
+                                cpuScore = 0
+                                resetAll()
+                            }) {
+                                Text(localized("reset_button"))
+                                    .font(.subheadline)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                            }
+                            .fixedSize()
                         }
 
-                        HStack(spacing: 8) {
-                            Text("わたし")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("\(cpuScore)")
-                                .font(.title2)
-                                .bold()
-                                .foregroundColor(.primary)
+                        HStack {
+                            Button(action: {
+                                resetAll()
+                                phase = .ready
+                                message = localized("start_message")
+                            }) {
+                                Text(localized("start_button"))
+                                    .font(.subheadline)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 18)
+                                    .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                saveScoresToCloud()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    exit(0)
+                                }
+                            }) {
+                                Text(localized("quit_button"))
+                                    .font(.subheadline)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 18)
+                                    .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                            }
+                        }
+
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                let defaults = UserDefaults.standard
+                                cloudSyncEnabled = defaults.bool(forKey: "cloudSyncEnabled")
+                                selectedVoice = defaults.string(forKey: "selectedVoice") ?? "girl"
+                                speedSetting = defaults.string(forKey: "speedSetting") ?? "normal"
+                                showSettingsSheet = true
+                            }) {
+                                Text(localized("settings_button"))
+                                    .font(.subheadline)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 14)
+                                    .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
+                            }
+                            .fixedSize()
+                            Spacer()
                         }
                     }
-                    .padding(10)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.quaternaryLabel)))
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Text("スコア: あなた \(playerScore) わたし \(cpuScore)"))
-                    .disabled(isTransitioning)
-
-                    Spacer()
-
-                    Button(action: {
-                        playerScore = 0
-                        cpuScore = 0
-                        resetAll()
-                    }) {
-                        Text(localized("reset_button"))
-                            .font(.subheadline)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
-                    }
-                    .fixedSize()
-                    .frame(minWidth: 72)
-                }
-
-                // Row 2: Start (left) and Quit (right)
-                HStack(alignment: .center) {
-                    Button(action: {
-                        // Start: reset and go to ready
-                        resetAll()
-                        phase = .ready
-                        message = localized("start_message")
-                    }) {
-                        Text(localized("start_button"))
-                            .font(.subheadline)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 18)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
-                    }
-                    .fixedSize()
-                    .frame(minWidth: 110)
-
-                    Spacer()
-
-                    Button(action: {
-                        // Quit: save scores to cloud then terminate app
-                        saveScoresToCloud()
-                        // give a short moment to persist
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            exit(0)
-                        }
-                    }) {
-                        Text(localized("quit_button"))
-                            .font(.subheadline)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 18)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
-                    }
-                    .fixedSize()
-                    .frame(minWidth: 110)
-                }
-
-                // Row 3: Settings (centered)
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        // 設定シートを表示
-                        // Load saved values when opening
-                        let defaults = UserDefaults.standard
-                        cloudSyncEnabled = defaults.bool(forKey: "cloudSyncEnabled")
-                        selectedVoice = defaults.string(forKey: "selectedVoice") ?? "girl"
-                        speedSetting = defaults.string(forKey: "speedSetting") ?? "normal"
-                        showSettingsSheet = true
-                    }) {
-                        Text(localized("settings_button"))
-                            .font(.subheadline)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 14)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 2))
-                    }
-                    .fixedSize()
-                    Spacer()
                 }
             }
             // (cloud buttons removed)
