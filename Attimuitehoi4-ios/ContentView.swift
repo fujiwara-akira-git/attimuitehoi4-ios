@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFAudio
+import Foundation
 
 // 復元された完全実装: じゃんけん -> あっちむいてホイ の流れを含む
 // - 指定アセットを厳密に使用
@@ -235,7 +236,7 @@ struct ContentView: View {
                         let data = fh.readDataToEndOfFile()
                         let output = String(decoding: data, as: UTF8.self)
                         // take first 12 non-empty lines for preview
-                        let lines = output.split(whereSeparator: \n).map { String($0) }
+                        let lines = output.split(separator: "\n").map { String($0) }
                         let filtered = lines.prefix(12).joined(separator: "\n")
                         DispatchQueue.main.async {
                             self.devOutputPreview = filtered
