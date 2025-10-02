@@ -64,6 +64,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--langs', default='ja', help='Comma-separated languages to generate (e.g. ja,en)')
     p.add_argument('--out', default='tts_output', help='Base output directory for MP3 files')
+    p.add_argument('--project', default=None, help='Optional GCP project id (will try to detect from credentials if omitted)')
     p.add_argument('--voice-map', default='', help='Optional mapping like "ja:ja-JP-Wavenet-A,en:en-US-Wavenet-A"')
     p.add_argument('--rate', type=float, default=1.0, help='Speaking rate (default 1.0)')
     p.add_argument('--pitch', type=float, default=2.0, help='Pitch (default 2.0 for "cute" voice)')
@@ -88,11 +89,22 @@ def main():
         print("Failed to initialize TextToSpeechClient. Ensure GOOGLE_APPLICATION_CREDENTIALS is set and google-cloud-texttospeech is installed.")
         raise
 
-    try:
-        client = texttospeech.TextToSpeechClient()
-    except Exception as e:
-        print("Failed to initialize TextToSpeechClient. Ensure GOOGLE_APPLICATION_CREDENTIALS is set and google-cloud-texttospeech is installed.")
-        raise
+    # If project id not provided, try to read from credentials JSON referenced by
+    # GOOGLE_APPLICATION_CREDENTIALS environment variable.
+    project_id = args.project
+    if not project_id:
+        creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        if creds_path and os.path.exists(creds_path):
+            try:
+                import json
+                with open(creds_path, 'r', encoding='utf-8') as cf:
+                    j = json.load(cf)
+                    if isinstance(j, dict) and 'project_id' in j:
+                        project_id = j['project_id']
+                        print(f'Detected project_id from credentials: {project_id}')
+            except Exception:
+                pass
+
 
     for lang in langs:
         # detect strings file path for language
@@ -134,7 +146,16 @@ def main():
             try:
                 synthesize_text(client, val, out_path, lang_code, voice_to_use, args.rate, args.pitch)
             except Exception as e:
-                print(f"Failed to synthesize '{key}' for {lang}: {e}")
+                msg = str(e)
+                print(f"Failed to synthesize '{key}' for {lang}: {msg}")
+                # If the error indicates the Text-to-Speech API is disabled, provide a helpful URL
+                if 'SERVICE_DISABLED' in msg or 'Text-to-Speech API' in msg or 'has not been used' in msg:
+                    if project_id:
+                        print(f"It looks like the Text-to-Speech API is disabled for project '{project_id}'.")
+                        print(f"Enable it here: https://console.developers.google.com/apis/api/texttospeech.googleapis.com/overview?project={project_id}")
+                    else:
+                        print("The Text-to-Speech API appears disabled for the project associated with your credentials.")
+                        print("Enable it in the Google Cloud Console: https://console.developers.google.com/apis/library/texttospeech.googleapis.com")
 
     print('\nAll done.')
 

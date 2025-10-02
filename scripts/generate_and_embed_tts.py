@@ -31,11 +31,13 @@ import sys
 import os
 
 
-def run_generate(langs, out, voice_map, rate, pitch):
+def run_generate(langs, out, voice_map, rate, pitch, project=None):
     cmd = [sys.executable, 'scripts/generate_tts.py', '--langs', ','.join(langs), '--out', out]
     if voice_map:
         cmd += ['--voice-map', voice_map]
     cmd += ['--rate', str(rate), '--pitch', str(pitch)]
+    if project:
+        cmd += ['--project', project]
     print('Running:', ' '.join(cmd))
     subprocess.check_call(cmd)
 
@@ -67,6 +69,7 @@ def main():
     p.add_argument('--langs', default='ja', help='Comma-separated langs to generate (e.g. ja,en)')
     p.add_argument('--out', default='tts_output', help='Output directory used by generate_tts.py')
     p.add_argument('--voice-map', default='ja:ja-JP-Wavenet-A,en:en-US-Wavenet-A', help='voice map passed to generator')
+    p.add_argument('--project', default=None, help='Optional GCP project id to pass to generator')
     p.add_argument('--rate', type=float, default=1.0)
     p.add_argument('--pitch', type=float, default=2.0)
     args = p.parse_args()
@@ -76,7 +79,7 @@ def main():
         print('No langs specified')
         sys.exit(1)
 
-    run_generate(langs, args.out, args.voice_map, args.rate, args.pitch)
+    run_generate(langs, args.out, args.voice_map, args.rate, args.pitch, project=args.project)
     copy_into_project(args.out, langs)
     commit_msg = f'Add generated TTS for langs: {" ".join(langs)}'
     try:
