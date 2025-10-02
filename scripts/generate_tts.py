@@ -49,9 +49,9 @@ def safe_filename(s: str) -> str:
     return re.sub(r'[^A-Za-z0-9_\-]', '_', s)
 
 
-def synthesize_text(client, text: str, out_path: Path, voice_name: str, rate: float, pitch: float):
+def synthesize_text(client, text: str, out_path: Path, language_code: str, voice_name: str, rate: float, pitch: float):
     input_text = texttospeech.SynthesisInput(text=text)
-    voice = texttospeech.VoiceSelectionParams(language_code='ja-JP', name=voice_name)
+    voice = texttospeech.VoiceSelectionParams(language_code=language_code, name=voice_name)
     audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3,
                                              speaking_rate=rate, pitch=pitch)
     response = client.synthesize_speech(input=input_text, voice=voice, audio_config=audio_config)
@@ -62,22 +62,25 @@ def synthesize_text(client, text: str, out_path: Path, voice_name: str, rate: fl
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--strings', default='Attimuitehoi4-ios/ja.lproj/Localizable.strings', help='Path to Localizable.strings (ja)')
-    p.add_argument('--out', default='tts_ja', help='Output directory for MP3 files')
-    p.add_argument('--voice', default='ja-JP-Wavenet-A', help='Google Cloud TTS voice name (e.g. ja-JP-Wavenet-A)')
+    p.add_argument('--langs', default='ja', help='Comma-separated languages to generate (e.g. ja,en)')
+    p.add_argument('--out', default='tts_output', help='Base output directory for MP3 files')
+    p.add_argument('--voice-map', default='', help='Optional mapping like "ja:ja-JP-Wavenet-A,en:en-US-Wavenet-A"')
     p.add_argument('--rate', type=float, default=1.0, help='Speaking rate (default 1.0)')
     p.add_argument('--pitch', type=float, default=2.0, help='Pitch (default 2.0 for "cute" voice)')
     args = p.parse_args()
 
-    strings_path = Path(args.strings)
-    if not strings_path.exists():
-        print(f"Strings file not found: {strings_path}")
+    langs = [s.strip() for s in args.langs.split(',') if s.strip()]
+    if not langs:
+        print('No languages specified via --langs')
         sys.exit(2)
 
-    items = parse_strings_file(strings_path)
-    if not items:
-        print("No strings found in the file.")
-        sys.exit(1)
+    # parse voice map
+    voice_map = {}
+    if args.voice_map:
+        for part in args.voice_map.split(','):
+            if ':' in part:
+                k, v = part.split(':', 1)
+                voice_map[k.strip()] = v.strip()
 
     try:
         client = texttospeech.TextToSpeechClient()
@@ -85,23 +88,53 @@ def main():
         print("Failed to initialize TextToSpeechClient. Ensure GOOGLE_APPLICATION_CREDENTIALS is set and google-cloud-texttospeech is installed.")
         raise
 
-    out_dir = Path(args.out)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        client = texttospeech.TextToSpeechClient()
+    except Exception as e:
+        print("Failed to initialize TextToSpeechClient. Ensure GOOGLE_APPLICATION_CREDENTIALS is set and google-cloud-texttospeech is installed.")
+        raise
 
-    print(f"Found {len(items)} strings. Generating MP3s to: {out_dir}\n")
-    for key, val in items:
-        # Skip empty strings
-        if not val.strip():
-            print(f"Skipping empty: {key}")
+    for lang in langs:
+        # detect strings file path for language
+        strings_path = Path(f'Attimuitehoi4-ios/{lang}.lproj/Localizable.strings')
+        if not strings_path.exists():
+            print(f"Strings file not found for {lang}: {strings_path} - skipping")
             continue
 
-        filename = safe_filename(key) + '.mp3'
-        out_path = out_dir / filename
-        print(f"Generating {filename} <- {val}")
-        try:
-            synthesize_text(client, val, out_path, args.voice, args.rate, args.pitch)
-        except Exception as e:
-            print(f"Failed to synthesize '{key}': {e}")
+        items = parse_strings_file(strings_path)
+        if not items:
+            print(f"No strings found in the file for {lang}: {strings_path}")
+            continue
+
+        # default voice per language
+        default_voice = voice_map.get(lang)
+        if not default_voice:
+            if lang == 'ja':
+                default_voice = 'ja-JP-Wavenet-A'
+            elif lang == 'en':
+                default_voice = 'en-US-Wavenet-A'
+            else:
+                default_voice = None
+
+        out_dir_lang = Path(args.out) / lang
+        out_dir_lang.mkdir(parents=True, exist_ok=True)
+        print(f"Found {len(items)} strings for {lang}. Generating MP3s to: {out_dir_lang}\n")
+
+        # determine language code for Google API
+        lang_code = 'ja-JP' if lang == 'ja' else 'en-US' if lang == 'en' else lang
+
+        for key, val in items:
+            if not val.strip():
+                print(f"Skipping empty: {key}")
+                continue
+            filename = safe_filename(key) + '.mp3'
+            out_path = out_dir_lang / filename
+            voice_to_use = default_voice if default_voice else ''
+            print(f"Generating {lang}/{filename} <- {val}")
+            try:
+                synthesize_text(client, val, out_path, lang_code, voice_to_use, args.rate, args.pitch)
+            except Exception as e:
+                print(f"Failed to synthesize '{key}' for {lang}: {e}")
 
     print('\nAll done.')
 
