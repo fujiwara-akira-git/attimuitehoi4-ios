@@ -36,3 +36,5 @@ fastlane/screenshots
 
 # Derived artifacts
 *.xcdebugger
+
+service_account.json
