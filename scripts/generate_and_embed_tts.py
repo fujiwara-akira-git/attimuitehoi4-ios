@@ -40,6 +40,22 @@ def run_generate(langs, out, voice_map, rate, pitch):
     subprocess.check_call(cmd)
 
 
+def run_generate_per_lang(out, per_lang_params):
+    """Call generator once per language with per-language voice/rate/pitch.
+    per_lang_params: dict lang -> {'voice': voice_id, 'rate': float, 'pitch': float}
+    """
+    for lang, params in per_lang_params.items():
+        voice = params.get('voice', '')
+        rate = params.get('rate', 1.0)
+        pitch = params.get('pitch', 0.0)
+        cmd = [sys.executable, 'scripts/generate_tts.py', '--langs', lang, '--out', out]
+        if voice:
+            cmd += ['--voice-map', f'{lang}:{voice}']
+        cmd += ['--rate', str(rate), '--pitch', str(pitch)]
+        print('Running:', ' '.join(cmd))
+        subprocess.check_call(cmd)
+
+
 def copy_into_project(out, langs):
     project_base = Path('Attimuitehoi4-ios/Attimuitehoi4-ios')
     resources_base = project_base / 'Resources' / 'TTS'
@@ -99,6 +115,7 @@ def main():
     p.add_argument('--skip-generate', action='store_true', help='Skip calling the generator and just rename/copy existing files')
     p.add_argument('--voice-map', default='ja:ja-JP-Wavenet-A,en:en-US-Wavenet-A', help='voice map passed to generator')
     p.add_argument('--friendly-map', default='', help="Friendly mapping like 'girl:ja:ja-JP-Neural2-C,boy:ja:ja-JP-Neural2-B,robot:ja:ja-JP-Chirp3-HD-Achernar' or leave empty to use built-in defaults.")
+    p.add_argument('--roles', default='', help="Comma-separated roles to generate (e.g. girl,boy,robot). When provided, per-role presets (voice/rate/pitch) will be used.")
     p.add_argument('--project', default=None, help='Optional GCP project id to pass to generator')
     p.add_argument('--rate', type=float, default=1.0)
     p.add_argument('--pitch', type=float, default=2.0)
@@ -155,10 +172,34 @@ def main():
         if entries:
             effective_voice_map = ','.join(entries)
 
-    if not args.skip_generate:
-        run_generate(langs, args.out, effective_voice_map, args.rate, args.pitch)
+    # If roles are provided, expand into per-language generation with presets
+    if args.roles:
+        # roles is comma-separated like 'girl,boy,robot'
+        roles = [r.strip() for r in args.roles.split(',') if r.strip()]
+        # built-in presets per role per language
+        presets = {
+            'girl': {'ja': {'voice': 'ja-JP-Neural2-C', 'rate': 1.0, 'pitch': 0.0}, 'en': {'voice': 'en-US-Neural2-C', 'rate': 1.0, 'pitch': 0.0}},
+            'boy': {'ja': {'voice': 'ja-JP-Neural2-B', 'rate': 1.0, 'pitch': 0.0}, 'en': {'voice': 'en-US-Neural2-B', 'rate': 1.0, 'pitch': 0.0}},
+            'robot': {'ja': {'voice': 'ja-JP-Chirp3-HD-Achernar', 'rate': 1.0, 'pitch': 0.0}, 'en': {'voice': 'en-US-Chirp3-HD-Achernar', 'rate': 1.0, 'pitch': 0.0}},
+        }
+        # Build per-lang params: for each role produce files in subfolders (e.g. out/role/lang/...)
+        for role in roles:
+            per_lang_params = {}
+            for lang in langs:
+                role_preset = presets.get(role, {}).get(lang)
+                if role_preset:
+                    per_lang_params[lang] = role_preset
+                else:
+                    # fallback to effective_voice_map or args defaults
+                    per_lang_params[lang] = {'voice': None, 'rate': args.rate, 'pitch': args.pitch}
+            # call generator per role; output goes to out/<role>
+            out_dir = Path(args.out) / role
+            run_generate_per_lang(str(out_dir), per_lang_params)
     else:
-        print('Skipping generation step as requested (--skip-generate)')
+        if not args.skip_generate:
+            run_generate(langs, args.out, effective_voice_map, args.rate, args.pitch)
+        else:
+            print('Skipping generation step as requested (--skip-generate)')
 
     # If project already has TTS files, attempt to rename them into the new suffix scheme
     rename_existing_project_files(langs)
