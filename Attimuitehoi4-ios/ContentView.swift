@@ -1,6 +1,9 @@
 import SwiftUI
 import AVFAudio
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // 復元された完全実装: じゃんけん -> あっちむいてホイ の流れを含む
 // - 指定アセットを厳密に使用
@@ -213,13 +216,24 @@ struct ContentView: View {
             }
             .confirmationDialog("Run TTS generator? This will invoke a local script on your machine (dry-run).", isPresented: $showDevConfirm, titleVisibility: .visible) {
                 Button("Run (dry-run)") {
-                    // perform the call and capture the first few lines of stdout
+                    // Prepare the shell command we'd run locally
                     let roles = selectedVoice
                     let langs = appLanguage
+                    let cmd = "python3 scripts/run_tts_for_ui.py --roles \(roles) --langs \(langs) --out tts_dev_output --skip-generate --dry-run"
+
+                    #if canImport(UIKit)
+                    // On iOS (simulator) we cannot spawn processes from the app; copy the command to clipboard
+                    UIPasteboard.general.string = cmd
+                    DispatchQueue.main.async {
+                        self.devOutputPreview = "Command copied to clipboard:\n\(cmd)"
+                        self.message = "Dev TTS: command copied to clipboard"
+                    }
+                    #else
+                    // On non-UIKit platforms (e.g. macOS) attempt to run the command and capture preview
                     DispatchQueue.global(qos: .utility).async {
                         let process = Process()
                         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-                        process.arguments = ["python3", "scripts/run_tts_for_ui.py", "--roles", roles, "--langs", langs, "--out", "tts_dev_output", "--skip-generate", "--dry-run"]
+                        process.arguments = ["sh", "-c", cmd]
                         let pipe = Pipe()
                         process.standardOutput = pipe
                         process.standardError = pipe
@@ -231,11 +245,8 @@ struct ContentView: View {
                             }
                             return
                         }
-                        // read up to some bytes (avoid blocking on very large output)
-                        let fh = pipe.fileHandleForReading
-                        let data = fh.readDataToEndOfFile()
+                        let data = pipe.fileHandleForReading.readDataToEndOfFile()
                         let output = String(decoding: data, as: UTF8.self)
-                        // take first 12 non-empty lines for preview
                         let lines = output.split(separator: "\n").map { String($0) }
                         let filtered = lines.prefix(12).joined(separator: "\n")
                         DispatchQueue.main.async {
@@ -243,6 +254,7 @@ struct ContentView: View {
                             self.message = "Dev TTS: finished (preview shown)"
                         }
                     }
+                    #endif
                 }
                 Button("Cancel", role: .cancel) { }
             }
