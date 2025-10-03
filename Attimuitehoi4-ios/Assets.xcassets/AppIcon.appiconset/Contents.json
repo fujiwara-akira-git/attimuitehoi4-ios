@@ -1,25 +1,116 @@
 {
   "images" : [
-    { "idiom": "iphone", "size": "20x20", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "20x20", "scale": "3x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "29x29", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "29x29", "scale": "3x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "40x40", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "40x40", "scale": "3x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "60x60", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "iphone", "size": "60x60", "scale": "3x", "filename": "Girl_front.png" },
-
-    { "idiom": "ipad", "size": "20x20", "scale": "1x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "20x20", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "29x29", "scale": "1x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "29x29", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "40x40", "scale": "1x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "40x40", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "76x76", "scale": "1x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "76x76", "scale": "2x", "filename": "Girl_front.png" },
-    { "idiom": "ipad", "size": "83.5x83.5", "scale": "2x", "filename": "Girl_front.png" },
-
-    { "idiom": "ios-marketing", "size": "1024x1024", "scale": "1x", "filename": "Girl_front.png" }
+    {
+      "filename" : "Girl_front 1.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "20x20"
+    },
+    {
+      "filename" : "Girl_front 2.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "20x20"
+    },
+    {
+      "filename" : "Girl_front 4.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "29x29"
+    },
+    {
+      "filename" : "Girl_front 3.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "29x29"
+    },
+    {
+      "filename" : "Girl_front 6.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "40x40"
+    },
+    {
+      "filename" : "Girl_front 5.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "40x40"
+    },
+    {
+      "filename" : "Girl_front 8.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "60x60"
+    },
+    {
+      "filename" : "Girl_front 7.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "60x60"
+    },
+    {
+      "filename" : "Girl_front 11.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "20x20"
+    },
+    {
+      "filename" : "Girl_front 9.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "20x20"
+    },
+    {
+      "filename" : "Girl_front 12.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "29x29"
+    },
+    {
+      "filename" : "Girl_front 10.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "29x29"
+    },
+    {
+      "filename" : "Girl_front.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "40x40"
+    },
+    {
+      "filename" : "Girl_front 17.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "40x40"
+    },
+    {
+      "filename" : "Girl_front 16.png",
+      "idiom" : "ipad",
+      "scale" : "1x",
+      "size" : "76x76"
+    },
+    {
+      "filename" : "Girl_front 15.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "76x76"
+    },
+    {
+      "filename" : "Girl_front 14.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "83.5x83.5"
+    },
+    {
+      "filename" : "Girl_front 13.png",
+      "idiom" : "ios-marketing",
+      "scale" : "1x",
+      "size" : "1024x1024"
+    }
   ],
-  "info": { "version": 1, "author": "xcode" }
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
 }

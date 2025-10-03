@@ -36,3 +36,13 @@
 "quit_button" = "終了";
 "start_message" = "ゲームを開始します";
 "quit_message" = "ゲームを終了しました";
+
+/* UI helper messages */
+"start_prompt" = "開始するにはスタートを押してください";
+"quit_confirm_title" = "終了の確認";
+"quit_confirm_message" = "本当に終了しますか？";
+"yes" = "はい";
+"no" = "いいえ";
+
+/* 遅すぎた入力メッセージ */
+"too_slow" = "入力が遅かった！次は早めに押してね";

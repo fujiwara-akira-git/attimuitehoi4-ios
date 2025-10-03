@@ -19,7 +19,11 @@ class SpeechHelper {
     }
 
     // TTS再生
-    func speak(_ text: String, language: String = "ja", voiceType: String = "girl", voiceID: String? = nil, speed: Float = AVSpeechUtteranceDefaultSpeechRate) {
+    func speak(_ text: String, language: String = "ja", voiceType: String = "girl", voiceID: String? = nil, speed: Float = AVSpeechUtteranceDefaultSpeechRate, forceInterrupt: Bool = false) {
+        // If requested, interrupt any currently speaking utterance to ensure this one plays immediately
+        if forceInterrupt && synth.isSpeaking {
+            synth.stopSpeaking(at: .immediate)
+        }
         let lang = (language == "en") ? "en-US" : "ja-JP"
         let utterance = AVSpeechUtterance(string: text)
         if let vid = voiceID, let v = AVSpeechSynthesisVoice(identifier: vid) {

@@ -36,3 +36,13 @@
 "quit_button" = "Quit";
 "start_message" = "Starting game";
 "quit_message" = "Game ended";
+
+/* UI helper messages */
+"start_prompt" = "Press Start to begin";
+"quit_confirm_title" = "Confirm Quit";
+"quit_confirm_message" = "Are you sure you want to quit?";
+"yes" = "Yes";
+"no" = "No";
+
+/* Too slow input message */
+"too_slow" = "Too slow! Try pressing faster next time.";

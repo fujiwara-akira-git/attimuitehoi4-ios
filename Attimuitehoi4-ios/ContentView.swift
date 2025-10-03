@@ -26,6 +26,7 @@ struct ContentView: View {
     }
 
     enum Phase {
+        case idle   // waiting for user to press Start
         case ready
         case janken
         case aimm
@@ -33,13 +34,15 @@ struct ContentView: View {
     }
 
     // MARK: - State
-    @State private var phase: Phase = .ready
+    @State private var phase: Phase = .idle
     @State private var playerHand: Hand? = nil
     @State private var cpuHand: Hand? = nil
     @State private var isCpuAttacker: Bool = false
     @State private var playerDirection: Direction? = nil
     @State private var cpuDirection: Direction? = nil
     @State private var message: String = ""
+    @State private var showQuitAlert: Bool = false
+    @State private var lastMessageKey: String? = nil
     @State private var isTransitioning: Bool = false
     @State private var finalWinner: String? = nil // "player" or "cpu"
     @State private var playerScore: Int = 0
@@ -67,6 +70,13 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 6).stroke(lineWidth: 3))
+
+            // If in idle state and message is empty, show a prompt instructing user to press Start
+            .onAppear {
+                if phase == .idle && message.isEmpty {
+                        setMessage(key: "start_prompt")
+                }
+            }
 
             // 上段: CPU 画像ブロック
             VStack(spacing: 8) {
@@ -225,11 +235,11 @@ struct ContentView: View {
                 // Start / Quit row
                 HStack(spacing: 16) {
                     Button(action: {
-                        // Start the game
-                        resetAll()
-                        phase = .ready
-                        message = localized("start_message")
-                    }) {
+                            // Start the game: user must press Start to begin. ResetAll triggers the
+                            // initial "最初はグー！" animation and transitions to .ready when done.
+                            didShowInitial = true
+                            resetAll()
+                        }) {
                         Text(localized("start_button"))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
@@ -238,11 +248,8 @@ struct ContentView: View {
                     }
 
                     Button(action: {
-                        // Quit: save scores then exit
-                        saveScoresToCloud()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            exit(0)
-                        }
+                        // Show confirmation dialog before quitting
+                        showQuitAlert = true
                     }) {
                         Text(localized("quit_button"))
                             .font(.headline)
@@ -357,19 +364,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // 最初に「最初はグー！」を表示して、お互いグーを見せる
-            guard !didShowInitial else { return }
-            didShowInitial = true
-            self.playerHand = .goo
-            self.cpuHand = .goo
-            self.message = localized("initial_goo")
-            // 少し待って通常モードへ
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                self.playerHand = nil
-                self.cpuHand = nil
-                self.message = localized("janken_pon")
-                self.phase = .ready
-            }
+            // Do not auto-start the game on appear. The user must press Start.
             if cloudSyncEnabled {
                 loadScoresFromCloud()
                 cloudObserver = NotificationCenter.default.addObserver(forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: NSUbiquitousKeyValueStore.default, queue: .main) { notif in
@@ -383,14 +378,38 @@ struct ContentView: View {
             }
         }
         .onChange(of: message) { new in
-            // speak the message in the selected app language
+            // existing message-based onChange left intentionally empty; speaking is handled by lastMessageKey
+        }
+
+        // Speak when the logical message key changes. For some keys we always force Japanese pronunciation.
+        .onChange(of: lastMessageKey) { key in
+            guard let key = key else { return }
+            // keys that should always be spoken in Japanese regardless of UI language
+            let alwaysSpeakJapanese: Set<String> = ["aimm_title", "initial_goo", "janken_tie"]
+
+            let speakLang = alwaysSpeakJapanese.contains(key) ? "ja" : appLanguage
+            let forceInterrupt = alwaysSpeakJapanese.contains(key)
+
             let speed: Float
             switch speedSetting {
             case "slow": speed = 0.35
             case "fast": speed = 0.65
             default: speed = 0.5
             }
-            SpeechHelper.shared.speak(message, language: appLanguage, voiceType: selectedVoice, voiceID: selectedVoiceID, speed: speed)
+
+            let textToSpeak = localized(key, language: speakLang)
+            SpeechHelper.shared.speak(textToSpeak, language: speakLang, voiceType: selectedVoice, voiceID: selectedVoiceID, speed: speed, forceInterrupt: forceInterrupt)
+        }
+        .alert(isPresented: $showQuitAlert) {
+            Alert(
+                title: Text(localized("quit_confirm_title")),
+                message: Text(localized("quit_confirm_message")),
+                primaryButton: .destructive(Text(localized("yes"))) {
+                    // Call central quit handler
+                    quitConfirmed()
+                },
+                secondaryButton: .cancel(Text(localized("no")))
+            )
         }
     }
 
@@ -413,7 +432,7 @@ struct ContentView: View {
                 self.cpuHand = nil
                 self.message = "" // 一度空文字に
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    self.message = localized("janken_tie")
+                    setMessage(key: "janken_tie")
                 }
                 self.isTransitioning = false
                 self.phase = .ready
@@ -421,7 +440,7 @@ struct ContentView: View {
 
         case .player:
             // プレイヤー勝ちの表示中は攻撃者がプレイヤーである旨を表示
-            self.message = localized("you_attack")
+            setMessage(key: "you_attack")
             isCpuAttacker = false
             // あっちむいてホイ で勝敗を確定するためスコアの加算はここでは行わない
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -431,7 +450,7 @@ struct ContentView: View {
                 self.didShowInitial = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     self.phase = .aimm
-                    self.message = localized("aimm_title")
+                    setMessage(key: "aimm_title")
                     self.showAimmButtons = true
                     self.isTransitioning = false
                 }
@@ -439,7 +458,7 @@ struct ContentView: View {
 
         case .cpu:
             // CPU勝ちの表示中は攻撃者がCPUである旨を表示
-            self.message = localized("cpu_attack")
+            setMessage(key: "cpu_attack")
             isCpuAttacker = true
             // スコアは aimm で勝者が確定した時に増やす
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -448,7 +467,7 @@ struct ContentView: View {
                 self.didShowInitial = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     self.phase = .aimm
-                    self.message = localized("aimm_title")
+                    setMessage(key: "aimm_title")
                     self.showAimmButtons = true
                     self.isTransitioning = false
                     self.cpuActAsAttackerIfNeeded()
@@ -489,7 +508,7 @@ struct ContentView: View {
         // ここではプレイヤーが選べるように待機状態にするだけ。
         isTransitioning = false
         self.cpuDirection = nil
-        self.message = localized("aimm_title")
+    setMessage(key: "aimm_title")
     // debug logs removed
     }
 
@@ -503,19 +522,27 @@ struct ContentView: View {
         return NSLocalizedString(key, comment: "")
     }
 
+    // Fetch localized string for a specific language code (e.g. "ja" or "en")
+    private func localized(_ key: String, language: String) -> String {
+        if let path = Bundle.main.path(forResource: language, ofType: "lproj"), let b = Bundle(path: path) {
+            return NSLocalizedString(key, bundle: b, comment: "")
+        }
+        return NSLocalizedString(key, comment: "")
+    }
+
     // Apply the currently selected language to UI-visible messages immediately
     private func applyLanguageSelection() {
         // Update message and any static UI texts that were set programmatically
         if phase == .ready {
-            self.message = localized("janken_pon")
+            setMessage(key: "janken_pon")
         } else if phase == .aimm {
-            self.message = localized("aimm_title")
+            setMessage(key: "aimm_title")
         } else if phase == .result {
             // leave result message as-is; resetAll will reapply when returning
         } else if phase == .janken {
             // no-op; janken flow will set messages as necessary
         } else {
-            self.message = localized("initial_goo")
+            setMessage(key: "initial_goo")
         }
     }
 
@@ -540,11 +567,11 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 self.phase = .result
                 if winnerIsPlayer {
-                    self.message = localized("you_win")
+                    setMessage(key: "you_win")
                     self.playerScore += 1
                     saveScoresToCloud()
                 } else {
-                    self.message = localized("cpu_win")
+                    setMessage(key: "cpu_win")
                     self.cpuScore += 1
                     saveScoresToCloud()
                 }
@@ -569,17 +596,17 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 self.playerDirection = nil
                 self.cpuDirection = nil
-                self.message = localized("draw_retry")
+                setMessage(key: "draw_retry")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     self.playerHand = .goo
                     self.cpuHand = .goo
-                    self.message = localized("initial_goo")
+                    setMessage(key: "initial_goo")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                         self.playerHand = nil
                         self.cpuHand = nil
                         self.phase = .ready
                         self.isTransitioning = false
-                        self.message = localized("janken_pon")
+                        setMessage(key: "janken_pon")
                     }
                 }
             }
@@ -591,32 +618,50 @@ struct ContentView: View {
     private let cloudCpuKey = "cpuScore"
 
     private func saveScoresToCloud() {
-        if cloudSyncEnabled {
+        // Always persist locally first
+        let defaults = UserDefaults.standard
+        defaults.set(playerScore, forKey: "playerScore")
+        defaults.set(cpuScore, forKey: "cpuScore")
+
+        // If cloud sync is enabled and an iCloud account is available, write to iCloud as well
+        if cloudSyncEnabled && FileManager.default.ubiquityIdentityToken != nil {
             let store = NSUbiquitousKeyValueStore.default
             store.set(playerScore, forKey: cloudPlayerKey)
             store.set(cpuScore, forKey: cloudCpuKey)
-            store.synchronize()
+            let ok = store.synchronize()
+            if !ok {
+                print("[saveScoresToCloud] NSUbiquitousKeyValueStore.synchronize() returned false")
+            }
         } else {
-            let defaults = UserDefaults.standard
-            defaults.set(playerScore, forKey: "playerScore")
-            defaults.set(cpuScore, forKey: "cpuScore")
+            // iCloud not available or disabled; keep local UserDefaults as source of truth
+            if cloudSyncEnabled {
+                print("[saveScoresToCloud] cloudSyncEnabled but iCloud not available; saved to UserDefaults instead")
+            }
         }
     }
 
     private func loadScoresFromCloud() {
-        if cloudSyncEnabled {
+        let defaults = UserDefaults.standard
+        // Prefer iCloud values when enabled and available
+        if cloudSyncEnabled && FileManager.default.ubiquityIdentityToken != nil {
             let store = NSUbiquitousKeyValueStore.default
             let p = store.longLong(forKey: cloudPlayerKey)
             let c = store.longLong(forKey: cloudCpuKey)
             if p != 0 || c != 0 {
                 self.playerScore = Int(p)
                 self.cpuScore = Int(c)
+                // Also mirror to UserDefaults for local persistence
+                defaults.set(self.playerScore, forKey: "playerScore")
+                defaults.set(self.cpuScore, forKey: "cpuScore")
+                return
+            } else {
+                print("[loadScoresFromCloud] iCloud available but no values found; falling back to UserDefaults")
             }
-        } else {
-            let defaults = UserDefaults.standard
-            self.playerScore = defaults.integer(forKey: "playerScore")
-            self.cpuScore = defaults.integer(forKey: "cpuScore")
         }
+
+        // Fallback to local storage
+        self.playerScore = defaults.integer(forKey: "playerScore")
+        self.cpuScore = defaults.integer(forKey: "cpuScore")
     }
 
     private func handleCloudChange(notification: Notification) {
@@ -640,7 +685,7 @@ struct ContentView: View {
         // 両者グーを表示して "最初はグー！" とする
         playerHand = .goo
         cpuHand = .goo
-    message = localized("initial_goo")
+    setMessage(key: "initial_goo")
         // リセットから戻る途中は遷移扱いにする
         isTransitioning = true
 
@@ -650,8 +695,50 @@ struct ContentView: View {
             self.cpuHand = nil
             self.phase = .ready
             self.isTransitioning = false
-            self.message = localized("janken_pon")
+            setMessage(key: "janken_pon")
         }
+    }
+
+    // Set the visible message by key and remember the key for TTS logic
+    private func setMessage(key: String) {
+        // Always update visible message immediately
+        self.message = localized(key)
+
+        // If the key is the same as the previous one, clear it first so SwiftUI's onChange
+        // will fire even for repeated identical messages (e.g. repeated ties).
+        if self.lastMessageKey == key {
+            self.lastMessageKey = nil
+            DispatchQueue.main.async {
+                self.lastMessageKey = key
+            }
+        } else {
+            self.lastMessageKey = key
+        }
+    }
+
+    // Handle confirmed quit: save scores, attempt to suspend app (iOS) and then exit.
+    private func quitConfirmed() {
+        // Ensure scores are saved
+        saveScoresToCloud()
+
+#if canImport(UIKit)
+        // Try to send app to background first (more graceful on simulator/device)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            let sel = NSSelectorFromString("suspend")
+            if UIApplication.shared.responds(to: sel) {
+                UIApplication.shared.perform(sel)
+            }
+            // After a short delay, force exit to ensure process termination during development
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                exit(0)
+            }
+        }
+#else
+        // On non-UIKit platforms, just exit
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            exit(0)
+        }
+#endif
     }
 
     private func cpuPickHand() -> Hand {
