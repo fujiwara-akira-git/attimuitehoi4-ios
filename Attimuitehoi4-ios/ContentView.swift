@@ -59,6 +59,7 @@ struct ContentView: View {
     @State private var selectedVoice: String = "girl"
     @State private var selectedVoiceID: String? = UserDefaults.standard.string(forKey: "selectedVoiceID")
     @State private var speedSetting: String = "normal"
+    @State private var voiceQuality: String = "metan"
     // App language (ja/en) persisted in UserDefaults
     @AppStorage("appLanguage") private var appLanguage: String = Locale.current.language.languageCode?.identifier ?? "ja"
 
@@ -278,6 +279,7 @@ struct ContentView: View {
                         cloudSyncEnabled = defaults.bool(forKey: "cloudSyncEnabled")
                         selectedVoice = defaults.string(forKey: "selectedVoice") ?? "girl"
                         speedSetting = defaults.string(forKey: "speedSetting") ?? "normal"
+                        voiceQuality = defaults.string(forKey: "voiceQuality") ?? "metan"
                         showSettingsSheet = true
                     }) {
                         Text(localized("settings_button"))
@@ -303,17 +305,37 @@ struct ContentView: View {
                         Picker(localized("voice_picker_label"), selection: $selectedVoice) {
                             Text(localized("voice_girl")).tag("girl")
                             Text(localized("voice_boy")).tag("boy")
+                            Text("AI音声").tag("ai")
                             Text(localized("voice_robot")).tag("robot")
                         }
                         .pickerStyle(.segmented)
+                        
+                        // Voice Quality Selection
+                        Picker("音声品質", selection: $voiceQuality) {
+                            Text("標準").tag("standard")
+                            Text("高品質").tag("enhanced")
+                            Text("AI音声").tag("neural")
+                            Text("四国めたん").tag("metan")
+                        }
+                        .pickerStyle(.segmented)
 
-                        // 女の子・男の子voice選択
-                        if selectedVoice == "girl" || selectedVoice == "boy" {
-                            let voices = SpeechHelper.shared.availableVoices(language: appLanguage, type: selectedVoice)
-                            Picker(selectedVoice == "girl" ? localized("voice_girl") : localized("voice_boy"), selection: $selectedVoiceID) {
-                                ForEach(voices, id: \ .identifier) { v in
-                                    Text(v.name).tag(v.identifier as String?)
+
+                        // 女の子・男の子・AI voice選択
+                        if selectedVoice == "girl" || selectedVoice == "boy" || selectedVoice == "ai" {
+                            let quality = SpeechHelper.VoiceQuality(rawValue: voiceQuality) ?? .metan
+                            let voices = SpeechHelper.shared.availableVoices(language: appLanguage, type: selectedVoice, quality: quality)
+                            if !voices.isEmpty {
+                                Picker(selectedVoice == "girl" ? localized("voice_girl") : 
+                                      selectedVoice == "boy" ? localized("voice_boy") : "AI音声", 
+                                      selection: $selectedVoiceID) {
+                                    ForEach(voices, id: \ .identifier) { v in
+                                        Text("\(v.name) (\(v.quality == .enhanced ? "高品質" : "標準"))").tag(v.identifier as String?)
+                                    }
                                 }
+                            } else {
+                                Text("選択した品質の音声が利用できません")
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
                             }
                         }
                     }
@@ -345,6 +367,7 @@ struct ContentView: View {
                             defaults.set(cloudSyncEnabled, forKey: "cloudSyncEnabled")
                             defaults.set(selectedVoice, forKey: "selectedVoice")
                             defaults.set(speedSetting, forKey: "speedSetting")
+                            defaults.set(voiceQuality, forKey: "voiceQuality")
                             defaults.set(appLanguage, forKey: "appLanguage")
                             defaults.set(selectedVoiceID, forKey: "selectedVoiceID")
                             // SpeechHelperはstatelessなのでselectedVoiceIDの保存のみ
@@ -398,7 +421,8 @@ struct ContentView: View {
             }
 
             let textToSpeak = localized(key, language: speakLang)
-            SpeechHelper.shared.speak(textToSpeak, language: speakLang, voiceType: selectedVoice, voiceID: selectedVoiceID, speed: speed, forceInterrupt: forceInterrupt)
+            let quality = SpeechHelper.VoiceQuality(rawValue: voiceQuality) ?? .metan
+            SpeechHelper.shared.speak(textToSpeak, language: speakLang, voiceType: selectedVoice, voiceID: selectedVoiceID, speed: speed, forceInterrupt: forceInterrupt, quality: quality, messageKey: key)
         }
         .alert(isPresented: $showQuitAlert) {
             Alert(

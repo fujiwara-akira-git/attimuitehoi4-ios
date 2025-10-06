@@ -3,13 +3,13 @@
 "initial_goo" = "Rock!";
 "janken_pon" = "Janken Pon!";
 "janken_tie" = "It's a tie!";
-"you_attack" = "You will point";
-"cpu_attack" = "I will point";
+"you_attack" = "You point!";
+"cpu_attack" = "I point!";
 "aimm_prompt_player_attack" = "Point up, down, left or right";
 "aimm_prompt_cpu_attack" = "Look over there!";
 "you_win" = "You win!";
 "cpu_win" = "I win!";
-"draw_retry" = "No decision, try again!";
+"draw_retry" = "No winner! Try again!";
 "score_format" = "Score: You %d — Me %d";
 "settings_button" = "Settings";
 "settings_title" = "Settings";

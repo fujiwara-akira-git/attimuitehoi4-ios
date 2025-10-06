@@ -3,13 +3,13 @@
 "initial_goo" = "最初はグー！";
 "janken_pon" = "ジャンケンポン！";
 "janken_tie" = "あいこでしょ！";
-"you_attack" = "あなたが指差し";
-"cpu_attack" = "わたしが指差し";
+"you_attack" = "あなたが指差し！";
+"cpu_attack" = "わたしが指差し！";
 "aimm_prompt_player_attack" = "指を上下左右に向けて";
 "aimm_prompt_cpu_attack" = "あっちむいてほい！";
 "you_win" = "あなたの勝ち！";
 "cpu_win" = "わたしの勝ち！";
-"draw_retry" = "勝負つかずもういちど！";
+"draw_retry" = "勝負つかず！もう一度！";
 "score_format" = "スコア: あなた %d  — わたし %d";
 "settings_button" = "設定";
 "settings_title" = "設定";
